@@ -1,0 +1,98 @@
+---
+title: "23_24 cleaning"
+author: "Caroline Nguyen"
+date: "2026-03-16"
+output: pdf_document
+---
+
+# _Initial set-up_
+
+## _Loading in packages_
+
+```{r, setup, include = FALSE}
+
+knitr::opts_knit$set(root.dir='C:/Users/cangu/Documents/recess minutes 2025/SB291-Recess-Data')
+
+library(tidyverse)
+
+```
+
+## _Loading 23-24 data_
+
+```{r}
+
+data <- read_csv("raw data/23-24_data.csv")
+cds <- read_csv("raw data/23_24_double entry.csv")
+
+```
+
+## _Cleaning_
+
+```{r}
+
+#dropping the check column
+data <- data[-1]
+
+# fixing cdscode
+cds <- cds %>% select(cdscode, district, school)
+merge <- left_join(data,
+                   cds,
+                   by = c("district", "school"),
+                   multiple = "any",
+                   suffix = c("_x","_y"))
+merge <- merge %>% select(-cdscode_x)
+merge <- rename(merge, cdscode = cdscode_y)
+rm(cds)
+rm(data)
+
+# reorder columns
+merge <- merge %>% select(cdscode, everything())
+length(unique(merge$cdscode)) #2991 schools
+unique(merge$schedule) # 4 types of schedules including NA 
+
+
+```
+
+## _Bringing in free reduced price meal data_
+
+```{r}
+
+frpm <- read_csv("raw data/frpm2324.csv")
+
+# Creating cdscode variable 
+frpm <- unite(frpm,
+              col = cdscode,
+              `County Code`:`School Code`,
+              sep = "")
+frpm$cdscode <- as.numeric(frpm$cdscode)
+
+# Merging frpm data with recess data
+merge2 <- left_join(merge,
+                    frpm,
+                    by = "cdscode")
+
+```
+
+## _Bringing in demographic data_
+
+```{r}
+
+demo <- read_csv("raw data/cenroll2324.csv")
+
+# Selecting school level aggregation
+demo <- demo %>% filter(AggregateLevel == "S")
+
+# Creating cdscode variable
+demo <- unite(demo,
+              col = cdscode,
+              CountyCode:SchoolCode,
+              sep = "")
+demo$cdscode <- as.numeric(demo$cdscode)
+
+# Keeping only necessary variables
+demo <- demo %>% select(cdscode, CountyName, DistrictName, SchoolName,
+                        ReportingCategory, CumulativeEnrollment)
+
+
+```
+
