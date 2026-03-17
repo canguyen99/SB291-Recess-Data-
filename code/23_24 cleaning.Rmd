@@ -7,7 +7,7 @@ output: pdf_document
 
 # _Initial set-up_
 
-## _Loading in packages_
+## _Loading in packages and setting working directory_
 
 ```{r, setup, include = FALSE}
 
@@ -26,7 +26,7 @@ cds <- read_csv("raw data/23_24_double entry.csv")
 
 ```
 
-## _Cleaning_
+# _Cleaning_
 
 ```{r}
 
@@ -42,8 +42,6 @@ merge <- left_join(data,
                    suffix = c("_x","_y"))
 merge <- merge %>% select(-cdscode_x)
 merge <- rename(merge, cdscode = cdscode_y)
-rm(cds)
-rm(data)
 
 # reorder columns
 merge <- merge %>% select(cdscode, everything())
@@ -77,22 +75,12 @@ merge2 <- left_join(merge,
 
 ```{r}
 
-demo <- read_csv("raw data/cenroll2324.csv")
-
-# Selecting school level aggregation
-demo <- demo %>% filter(AggregateLevel == "S")
-
-# Creating cdscode variable
-demo <- unite(demo,
-              col = cdscode,
-              CountyCode:SchoolCode,
-              sep = "")
-demo$cdscode <- as.numeric(demo$cdscode)
-
-# Keeping only necessary variables
-demo <- demo %>% select(cdscode, CountyName, DistrictName, SchoolName,
-                        ReportingCategory, CumulativeEnrollment)
-
+demo <- read_csv("raw data/demo_2324_clean.csv")
+merge3 <- left_join(merge2,
+                    demo,
+                    by = "cdscode")
+data_2324 <- merge3
+rm(cds, data, demo, frpm, merge, merge2, merge3)
 
 ```
 
