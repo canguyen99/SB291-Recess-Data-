@@ -48,7 +48,6 @@ merge <- merge %>% select(cdscode, everything())
 length(unique(merge$cdscode)) #2991 schools
 unique(merge$schedule) # 4 types of schedules including NA 
 
-
 ```
 
 ## _Bringing in free reduced price meal data_
@@ -75,7 +74,7 @@ merge2 <- left_join(merge,
 
 ```{r}
 
-demo <- read_csv("raw data/demo_2324_clean.csv")
+demo <- read_csv("processed data/demo_2324_clean.csv")
 merge3 <- left_join(merge2,
                     demo,
                     by = "cdscode")

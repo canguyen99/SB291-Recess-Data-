@@ -65,9 +65,7 @@ race$race[race$reportingcategory %in% "RW"] <- 9
 
 race <- race %>% select(-reportingcategory)
 
-reshape(race, direction = "wide", 
-        idvar = c("cdscode", "countyname", "districtname", "schoolname"),
-        timevar = "race")
+race <- spread(race, key=cumulativeenrollment, value=race)
 
 ```
 
