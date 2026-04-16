@@ -1,0 +1,18 @@
+---
+title: "24_25 cleaning"
+author: "Caroline Nguyen"
+date: "2026-04-16"
+output: pdf_document
+---
+
+# _Initial set-up_
+
+## _Loading in packages and setting working directory_
+
+```{r, setup, include = FALSE}
+
+knitr::opts_knit$set(root.dir='C:/Users/cangu/Documents/recess minutes 2025/SB291-Recess-Data')
+
+library(tidyverse)
+
+```
