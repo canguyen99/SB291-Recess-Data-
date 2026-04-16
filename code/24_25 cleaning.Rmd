@@ -14,5 +14,306 @@ output: pdf_document
 knitr::opts_knit$set(root.dir='C:/Users/cangu/Documents/recess minutes 2025/SB291-Recess-Data')
 
 library(tidyverse)
+library(stringr)
+
+```
+
+## _Loading 24-25 data_
+
+```{r}
+
+data <- read_csv("raw data/Recess_Minutes_24-25.csv")
+
+cds <- read_csv ("raw data/24-25 cds.csv")
+
+```
+
+## _Cleaning_
+
+```{r}
+
+# fixing cdscode
+cds$school <- gsub(" ","",cds$school, useBytes = TRUE)
+cds$district <- gsub(" ","",cds$district)
+
+cds <- cds %>% select(cdscode, district, school)
+merge <- left_join(data,
+                   cds,
+                   by = c("district", "school"),
+                   multiple = "any",
+                   suffix = c("_x","_y"))
+merge <- merge %>% select(-cdscode_x)
+merge <- rename(merge, cdscode = cdscode_y)
+
+# reorder columns
+merge <- merge %>% select(cdscode, everything())
+
+```
+
+### _Fixing days column_
+
+```{r}
+
+list(unique(merge$days))
+
+# recoding values
+merge <- merge %>% mutate(days = na_if(days, "(mark in notes)"))
+merge <- merge %>% mutate(days = na_if(days, "oct 21-25"))
+merge <- merge %>% mutate(days = na_if(days, "7:50-14:10"))
+merge <- merge %>% mutate(days = na_if(days, "7:50-12:40"))
+merge <- merge %>% mutate(days = recode(days, "mon, tues, weds, thurs;Fri" = "mon, tues, weds, thurs, fri"))
+merge <- merge %>% mutate(days = recode(days, "Tue;Wed;Thur" = "tues, weds, thurs"))
+merge <- merge %>% mutate(days = recode(days, "Mon;Tue:Wed;Fri" = "mon, tues, weds, fri"))
+merge <- merge %>% mutate(days = recode(days, "Mon;Fri" = "mon, fri"))
+merge <- merge %>% mutate(days = recode(days, "Mon;Wed;Fri" = "mon, weds, fri"))
+merge <- merge %>% mutate(days = recode(days, "Mon;Thur;Fri" = "mon, thurs, fri"))
+merge <- merge %>% mutate(days = recode(days, "Tue;Thur" = "tues, thurs"))
+
+# Splitting days column
+merge$days <- strsplit(merge$days, 
+                     split = "[;\\,,\\]")
+merge <- unnest_wider(merge,
+                    col  = days,
+                    names_sep = "")
+
+# making days variables binary
+merge <- merge %>% mutate(day1_num = ifelse(is.na(merge$days1), 0, 1))
+merge <- merge %>% mutate(day2_num = ifelse(is.na(merge$days2), 0, 1))
+merge <- merge %>% mutate(day3_num = ifelse(is.na(merge$days3), 0, 1))
+merge <- merge %>% mutate(day4_num = ifelse(is.na(merge$days4), 0, 1))
+merge <- merge %>% mutate(day5_num = ifelse(is.na(merge$days5), 0, 1))
+
+# calculating total number of days for each type of schedule
+sum <- merge %>% select(c("day1_num", "day2_num", "day3_num", "day4_num", "day5_num"))
+sum <- rowSums(sum)
+merge <- merge %>% cbind(sum)
+
+# reordering columns
+merge <- merge %>% select(-c("day1_num":"day5_num"))
+merge <- merge %>% select("cdscode", "schedule type", "district", "school", "days1", "days2", "days3", "days4", "days5", "sum", "schedule type", everything())
+list(unique(merge$sum))
+  # 4/5 days = regular day schedule
+  # 1 day = minimum day schedule
+  # anything else = ? need more information
+
+```
+
+### _Fixing schedule column_
+
+```{r}
+
+merge <- rename(merge, schedule = `schedule type`)
+merge$schedule <- tolower(merge$schedule)
+list(unique(merge$schedule)) # schedule types should be: regular, early release, late start, or NA 
+
+# recoding values 
+merge <- merge %>% mutate(schedule = recode(schedule, "start-up days" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "shortened" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "collaborationday" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "wednesday" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "in-person,amonly" = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "collaborationearly release" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "earkyrelease" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "short" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "wednesdaydismissal" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "prepday" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "firstday" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "inclementweather" = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "friday" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "rainy day"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "rainyday" = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "late startwednesday" = "late start"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early releasemondays"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "shortenedday" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "pctwednesdays" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early releases/early release" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "minimun"= "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "earlyout"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early release&otherearly releases"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "regulart/th"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early release/parentteacherconferences" = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "parentconferenceweek"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "parentconferences"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early releaseandparentteacherconference"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "wednesdayearly release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "wednesday/conference"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early release(conferenceandlastday)"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "conferenceandearly release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "delayedstart"  = "late start"))
+merge <- merge %>% mutate(schedule = recode(schedule, "k-5regular"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "wed"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "extraearly release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "extraearly"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early release/early release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "foggy"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "collaborationdays"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "prep"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "dismissal"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "professional"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "banked"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "tuesdays"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "bankedday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "blockearly release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "regularinstructional"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "bankedtime"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "professionaldevelopment"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "pd"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "professionaldevelopmenttuesdays"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early released"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "pupilhours"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "fullday"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "late starttuesday"  = "late start"))
+merge <- merge %>% mutate(schedule = recode(schedule, "on-campus"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "monday"   = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "regular,wednesdayearly release,early release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "modifiedday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "latearrival" = "late start"))
+merge <- merge %>% mutate(schedule = recode(schedule, "vapa"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "collabday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "flexday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "minmum"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early release'"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "bankingday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "wednesdays"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "noon"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "conference"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "weds"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "collaboration"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "instructionalplanningwednesday"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "shortday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "in-person,allday"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "online"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "fridaydismissal"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "rainy"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "compactday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "tuesdayonly"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "conferenceweek"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early releaseout"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "short day"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early release/conference"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early releasewednesday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early releases"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "mondayearly release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "tuesdayearly release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "reverseearly release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "tinytuesday/early releases"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "modified"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "consolidated"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "delayed"  = "late start"))
+merge <- merge %>% mutate(schedule = recode(schedule, "regularm/w/f"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "regulartu/th"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "adjustschedule"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "lastday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early releaseandparentconference"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "clubday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "restructuredday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "wednesday,conference,reduced"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "parentconference"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early release/parentconference"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "mimimum"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "6regular"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "dwpdays"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "thurs"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early releaseplanning"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "minimimday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early release/early releases"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "minimium"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "thursday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "banktime"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "regulra"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "tuesday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "pdtuesday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "instructionalsupport"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early releaseearly release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "banked/early release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "bankedtuesday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "earlydimissal"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "tuesdayandearly release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "professionaldevelopmentday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "reducedday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "halfday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "wednesday/early release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early release(early releaseschedule)"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "homestudy"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "restructuredday-friday,andconferenceweek"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early releasemonday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "limitedday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "bankingtime"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "inclementweatherregular"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "homestudyday"  = "regular"))
+merge <- merge %>% mutate(schedule = recode(schedule, "superearly release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "mninimum"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "flex"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "bankingday/early release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "shorteneddays"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "min"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "early releaseday"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "lateday"  = "late start"))
+merge <- merge %>% mutate(schedule = recode(schedule, "friday/early release"  = "early release"))
+merge <- merge %>% mutate(schedule = recode(schedule, "conferencedays"  = "early release"))
+
+# drop blanks rows
+merge <- merge %>% filter(!is.na(schedule))
+
+# drop duplicated rows
+merge <- merge %>% distinct()
+
+```
+
+### _Fixing column names_
+
+```{r}
+
+colnames(merge) <- c("cdscode", "schedule", "district", "school", "days1", "days2", "days3", "days4", "days5", "sum",
+                           "tkd", "kd", "first", "second", "third", "fourth", "fifth", "sixth", "tkrec1", "krec1",
+                           "onerec1", "tworec1", "threerec1", "fourrec1", "fiverec1", "sixrec1", "tklunch", "klunch",
+                           "onelunch", "twolunch", "threelunch", "fourlunch", "fivelunch", "sixlunch", "tkrec2", "krec2", 
+                           "onerec2", "tworec2", "threerec2", "fourre2", "fiverec2", "sixrec2")
+
+length(unique(merge$cdscode)) # 2536 schools compared to 2991 schools in 23-24 data?
+
+```
+
+## _Bringing in free reduced price meal data_
+
+```{r}
+
+frpm <- read_csv("raw data/frpm2425.csv")
+
+# creating cdscode variable 
+frpm <- unite(frpm,
+              col = cdscode,
+              `County Code`:`School Code`,
+              sep = "")
+frpm$cdscode <- as.numeric(frpm$cdscode)
+
+# merging frpm data with recess data
+merge2 <- left_join(merge,
+                    frpm,
+                    by = "cdscode")
+
+# keeping only elementary schools
+list(unique(merge2$`School Type`))
+merge2 <- merge2 %>% filter(`School Type` != "Intermediate/Middle Schools (Public)")
+
+length(unique(merge2$cdscode)) #2325 schools
+
+```
+
+## _Bringing in demographic data_
+
+```{r}
+
+demo <- read_csv("processed data/demo_2324_clean.csv")
+merge3 <- left_join(merge2,
+                    demo,
+                    by = "cdscode")
+data_2324 <- merge3
+rm(cds, data, demo, frpm, merge, merge2, merge3)
+
+data_2324 <- data_2324 %>% select(-c(`Academic Year`:IRC)) %>% select(-c(`CALPADS Fall 1 \nCertification Status`:`school.y`))
+
+length(unique(data_2324$cdscode)) #2959 schools
 
 ```
