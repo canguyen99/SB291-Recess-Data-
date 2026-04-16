@@ -26,7 +26,7 @@ cds <- read_csv("raw data/23_24_double entry.csv")
 
 ```
 
-# _Cleaning_
+## _Cleaning_
 
 ```{r}
 
@@ -68,18 +68,26 @@ merge2 <- left_join(merge,
                     frpm,
                     by = "cdscode")
 
+# keeping only elementary schools
+list(unique(merge2$`School Type`))
+merge2 <- merge2 %>% filter(`School Type` != "Intermediate/Middle Schools (Public)")
+
 ```
 
 ## _Bringing in demographic data_
 
 ```{r}
 
-demo <- read_csv("processed data/demo_2324_clean.csv")
+demo <- read_csv("processed data/demo_2425_clean.csv")
 merge3 <- left_join(merge2,
                     demo,
                     by = "cdscode")
-data_2324 <- merge3
+data_2425 <- merge3
 rm(cds, data, demo, frpm, merge, merge2, merge3)
+
+data_2425 <- data_2425  %>% select(-c(`Academic Year`:IRC)) %>% select(-c(`CALPADS Fall 1 \nCertification Status`:`school.y`))
+
+length(unique(data_2425 $cdscode)) #2959 schools
 
 ```
 
