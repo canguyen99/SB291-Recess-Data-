@@ -78,16 +78,23 @@ merge2 <- merge2 %>% filter(`School Type` != "Intermediate/Middle Schools (Publi
 
 ```{r}
 
-demo <- read_csv("processed data/demo_2425_clean.csv")
+demo <- read_csv("processed data/demo_2324_clean.csv")
 merge3 <- left_join(merge2,
                     demo,
                     by = "cdscode")
-data_2425 <- merge3
+data_2324 <- merge3
 rm(cds, data, demo, frpm, merge, merge2, merge3)
 
-data_2425 <- data_2425  %>% select(-c(`Academic Year`:IRC)) %>% select(-c(`CALPADS Fall 1 \nCertification Status`:`school.y`))
+data_2324 <- data_2324  %>% select(-c(`Academic Year`:IRC)) %>% select(-c(`CALPADS Fall 1 \nCertification Status`:`school.y`))
 
-length(unique(data_2425 $cdscode)) #2959 schools
+length(unique(data_2324 $cdscode)) #2959 schools
 
+```
+
+## _Exporting as csv_
+
+```{r}
+
+write.csv(data_2324,"processed data/data_23-24.csv", row.names=FALSE)
 ```
 

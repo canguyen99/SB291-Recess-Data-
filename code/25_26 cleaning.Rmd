@@ -1,0 +1,35 @@
+---
+title: "25_26 cleaning"
+author: "Caroline Nguyen"
+date: "2026-04-17"
+output: pdf_document
+---
+
+# _Initial set-up_
+
+## _Loading in packages and setting working directory_
+
+```{r, setup, include = FALSE}
+
+knitr::opts_knit$set(root.dir='C:/Users/cangu/Documents/recess minutes 2025/SB291-Recess-Data')
+
+library(tidyverse)
+
+```
+
+## _Loading 25-26 data_
+
+```{r}
+
+data <- read_csv("raw data/25_26 data.csv")
+
+```
+
+## _Cleaning_
+
+```{r}
+
+length(unique(data$`cds code`))
+
+```
+

@@ -314,6 +314,15 @@ rm(cds, data, demo, frpm, merge, merge2, merge3)
 
 data_2425 <- data_2425 %>% select(-c(`Academic Year`:`Independently Reporting Charter (IRC)`)) %>% select(-c(`California Longitudinal Pupil Achievement Data System (CALPADS) Fall 1 \nCertification Status`:`school.y`))
 
-length(unique(data_2425$cdscode)) #2959 schools
+length(unique(data_2425$cdscode)) #2325 schools
 
 ```
+
+## _Exporting as csv_
+
+```{r}
+
+write.csv(data_2425,"processed data/data_24-25.csv", row.names=FALSE)
+
+```
+
