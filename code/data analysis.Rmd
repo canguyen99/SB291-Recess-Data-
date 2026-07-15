@@ -1,6 +1,7 @@
 ---
 title: "analysis"
 author: "Caroline Nguyen"
+date: "2026-07-14"
 output: pdf_document
 ---
 
@@ -31,20 +32,20 @@ data_2425 <- read_csv("processed data/data_24-25.csv")
 ```{r}
 
 data <- full_join(data_2324,
-                  data_2425,
-                  by="cdscode")
+                  data_2425)
 
-nomatch1 <- data %>% filter(is.na(school.x))
-length(unique(nomatch1$cdscode)) #585 schools show up in only 24/25
 
-nomatch2 <- data %>% filter(is.na(school.y))
-length(unique(nomatch2$cdscode)) #1219 schools show up in only 23/24
+#nomatch1 <- data %>% filter(is.na(school.x))
+#length(unique(nomatch1$cdscode)) #585 schools show up in only 24/25
 
-nomatch3 <- data %>% filter(!is.na(school.x) & !is.na(school.y))
-length(unique(nomatch3$cdscode)) #1740 schools show up in both 23/24 and 24/25
+#nomatch2 <- data %>% filter(is.na(school.y))
+#length(unique(nomatch2$cdscode)) #1219 schools show up in only 23/24
 
-data <- data[order(data$cdscode),] 
-length(unique(data$cdscode)) #3544 schools in total for both datasets
+#nomatch3 <- data %>% filter(!is.na(school.x) & !is.na(school.y))
+#length(unique(nomatch3$cdscode)) #1740 schools show up in both 23/24 and 24/25
+
+#data <- data[order(data$cdscode),] 
+#length(unique(data$cdscode)) #3544 schools in total for both datasets
 
 ```
 

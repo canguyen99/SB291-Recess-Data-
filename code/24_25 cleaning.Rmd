@@ -269,7 +269,7 @@ colnames(merge) <- c("cdscode", "schedule", "district", "school", "days1", "days
                            "tkd", "kd", "first", "second", "third", "fourth", "fifth", "sixth", "tkrec1", "krec1",
                            "onerec1", "tworec1", "threerec1", "fourrec1", "fiverec1", "sixrec1", "tklunch", "klunch",
                            "onelunch", "twolunch", "threelunch", "fourlunch", "fivelunch", "sixlunch", "tkrec2", "krec2", 
-                           "onerec2", "tworec2", "threerec2", "fourre2", "fiverec2", "sixrec2")
+                           "onerec2", "tworec2", "threerec2", "fourrec2", "fiverec2", "sixrec2")
 
 length(unique(merge$cdscode)) # 2536 schools compared to 2991 schools in 23-24 data?
 
