@@ -1,0 +1,71 @@
+---
+title: "analysis"
+author: "Caroline Nguyen"
+output: pdf_document
+---
+
+# _Initial set-up_
+
+## _Loading in packages and setting working directory_
+
+```{r, setup, include = FALSE}
+
+knitr::opts_knit$set(root.dir='C:/Users/cangu/Documents/recess minutes 2025/SB291-Recess-Data')
+
+library(tidyverse)
+
+```
+
+
+## _Loading data_
+
+```{r}
+
+data_2324 <- read_csv("processed data/data_23-24.csv")
+data_2425 <- read_csv("processed data/data_24-25.csv")
+
+```
+
+## _Merging with 23-24 data_
+
+```{r}
+
+data <- full_join(data_2324,
+                  data_2425,
+                  by="cdscode")
+
+nomatch1 <- data %>% filter(is.na(school.x))
+length(unique(nomatch1$cdscode)) #585 schools show up in only 24/25
+
+nomatch2 <- data %>% filter(is.na(school.y))
+length(unique(nomatch2$cdscode)) #1219 schools show up in only 23/24
+
+nomatch3 <- data %>% filter(!is.na(school.x) & !is.na(school.y))
+length(unique(nomatch3$cdscode)) #1740 schools show up in both 23/24 and 24/25
+
+data <- data[order(data$cdscode),] 
+length(unique(data$cdscode)) #3544 schools in total for both datasets
+
+```
+
+## _Reviewing average number of minutes of recess_
+
+```{r}
+
+data <- separate(data_2324, col=tkd, into=c("start", "end"), sep = "-")
+
+## School day
+# Convert to time objects
+data$start <- as.POSIXct(data$start, format = "%H:%M")
+data$end <- as.POSIXct(data$end, format = "%H:%M")
+data <- data %>% mutate(minutes = (end-start)*60) 
+data$minutes <- as.numeric(data$minutes)
+
+## Recess 1 
+
+## Lunch
+
+## Recess 2
+
+
+```
